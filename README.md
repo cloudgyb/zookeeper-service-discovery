@@ -13,7 +13,7 @@
     - 有服务离线自动删除本地注册表中该服务的信息。
 - 保证服务信息数据的最终一致性
   
-![image](https://img-blog.csdnimg.cn/20210227153112358.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2d5YnNoZW4=,size_16,color_FFFFFF,t_70 =450x300)
+![image](https://img-blog.csdnimg.cn/20210227153112358.png)
 # 设计思路
 ## 相关概念
 - 命名空间(namesapce)： 用于划分不同的服务群。
