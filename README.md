@@ -12,14 +12,17 @@
     - 有新的服务注册到zookeeper，自动拉取更新本地注册表。
     - 有服务离线自动删除本地注册表中该服务的信息。
 - 保证服务信息数据的最终一致性
-  ![架构图](https://img-blog.csdnimg.cn/20210227153112358.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2d5YnNoZW4=,size_16,color_FFFFFF,t_70 =450x300)
+  
+![架构图](https://img-blog.csdnimg.cn/20210227153112358.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2d5YnNoZW4=,size_16,color_FFFFFF,t_70 =450x300)
 # 设计思路
 ## 相关概念
 - 命名空间(namesapce)： 用于划分不同的服务群。
 - 服务群：多个相关联的服务可以组成服务群，一个服务群使用一个唯一的命名空间(namespace)与其他服务群隔离，便于管理。
 - 服务注册：将服务实例信息注册到对应的命名空间中。
 - 服务发现：从zookeeper注册中心对应的命名空间拉取服务信息，并保存到本地注册表。
-  ![在这里插入图片描述](https://img-blog.csdnimg.cn/20210227160009439.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2d5YnNoZW4=,size_16,color_FFFFFF,t_70 =500x350)
+
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20210227160009439.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2d5YnNoZW4=,size_16,color_FFFFFF,t_70 =500x350)
+
 ## 实现方案
 整个系统分为两个模块：服务注册模块和服务发现模块。
 服务系统要注册到zookeeper，首先需要知道zookeeper的地址信息，有关zookeeper的配置信息配置到**zookeeper.properties**中。
@@ -45,7 +48,7 @@
 2. 以持久化方式创建/namespace/serviceName的znode作为服务集群的注册路径
 3. 当服务注册时，以临时序列号方式方式创建/namesapce/serviceName/serviceName0000000000的znode，并将服务信息写入到该节点下。以临时序列号方式方式创建该节点是因为当服务断开后会自动删除该节点，这样zookeeper会通知监听该znode的服务，动态的更新服务注册表，这样就实现了服务的动态发现功能。
 
-当多个服务的多个实例注册完成后zookeeper znode如下：
+当多个服务的多个实例注册完成后zookeeper znode如下：<br>
 ![在这里插入图片描述](https://img-blog.csdnimg.cn/20210227164835718.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2d5YnNoZW4=,size_16,color_FFFFFF,t_70)
 服务注册完成后，使用zookeeper的api watch /namespace节点即可监听该路径的变化。
 
@@ -54,5 +57,5 @@
 
 
 # 总结
-基本实现了服务注册和发现的功能，但是代码中有很多设计不合理的地方，很多需要优化的地方，仅供学习。
+基本实现了服务注册和发现的功能，但是代码中有很多设计不合理的地方，很多需要优化的地方，仅供学习。<br>
 CSDN 博客：[https://blog.csdn.net/gybshen/article/details/114175549](https://blog.csdn.net/gybshen/article/details/114175549)
