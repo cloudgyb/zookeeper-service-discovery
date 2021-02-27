@@ -21,7 +21,7 @@
 - 服务注册：将服务实例信息注册到对应的命名空间中。
 - 服务发现：从zookeeper注册中心对应的命名空间拉取服务信息，并保存到本地注册表。
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20210227160009439.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2d5YnNoZW4=,size_16,color_FFFFFF,t_70 =500x350)
+![image](https://img-blog.csdnimg.cn/20210227160009439.png)
 
 ## 实现方案
 整个系统分为两个模块：服务注册模块和服务发现模块。
@@ -49,7 +49,7 @@
 3. 当服务注册时，以临时序列号方式方式创建/namesapce/serviceName/serviceName0000000000的znode，并将服务信息写入到该节点下。以临时序列号方式方式创建该节点是因为当服务断开后会自动删除该节点，这样zookeeper会通知监听该znode的服务，动态的更新服务注册表，这样就实现了服务的动态发现功能。
 
 当多个服务的多个实例注册完成后zookeeper znode如下：<br>
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20210227164835718.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2d5YnNoZW4=,size_16,color_FFFFFF,t_70)
+![image](https://img-blog.csdnimg.cn/20210227164835718.png)
 服务注册完成后，使用zookeeper的api watch /namespace节点即可监听该路径的变化。
 
 ### 服务发现实现方案
