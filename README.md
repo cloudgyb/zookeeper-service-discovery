@@ -11,6 +11,7 @@
     - 服务上线自动拉取zookeeper中已经注册的服务信息。
     - 有新的服务注册到zookeeper，自动拉取更新本地注册表。
     - 有服务离线自动删除本地注册表中该服务的信息。
+- Zookeeper客户端session过期重连。  
 - 保证服务信息数据的最终一致性
   
 ![image](https://img-blog.csdnimg.cn/20210227153112358.png)

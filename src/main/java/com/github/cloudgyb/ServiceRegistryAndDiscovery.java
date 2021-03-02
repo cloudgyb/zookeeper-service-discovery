@@ -18,8 +18,9 @@ import org.slf4j.LoggerFactory;
  * @author cloudgyb
  * 2021/3/1 18:19
  */
-public class ServiceRegistryAndDiscovery {
+public class ServiceRegistryAndDiscovery implements ZookeeperSessionExpiredListener {
 	private final Logger logger = LoggerFactory.getLogger(ServiceRegistryAndDiscovery.class);
+	private RegistryService registryService;
 	private DiscoveryService discoveryService;
 	private ZooKeeper zooKeeper;
 	/**
@@ -55,16 +56,20 @@ public class ServiceRegistryAndDiscovery {
 		ZookeeperServerConfigProperties zkConfig = ZookeeperServerConfigProperties.config();
 		this.zooKeeper = new ZooKeeper(zkConfig.getServerAddress(), zkConfig.getSessionTimeout(),
 				defaultWatcher);
+		this.registryService = new RegistryService(this.zooKeeper);
 		this.discoveryService= new DiscoveryService(zkConfig, zooKeeper);
 		defaultWatcher.setDiscoveryService(this.discoveryService);
+		//注意：session过期监听器的注册顺序不能改变，先注册服务，再发现服务，后this
+		defaultWatcher.addSessionExpireListener(this.registryService);
+		defaultWatcher.addSessionExpireListener(this.discoveryService);
+		defaultWatcher.addSessionExpireListener(this);
 	}
 	/**
 	 * 将自己注册到zookeeper
 	 */
 	private void registryService() {
 		logger.info("开始注册服务....");
-		RegistryService registryService = new RegistryService(this.zooKeeper);
-		registryService.registry();
+		this.registryService.registry();
 		logger.info("注册服务成功！");
 	}
 
@@ -81,12 +86,24 @@ public class ServiceRegistryAndDiscovery {
 	private void enableNamespaceWatch() throws KeeperException, InterruptedException {
 		ZookeeperServerConfigProperties zkConfig = ZookeeperServerConfigProperties.config();
 		String namespace = zkConfig.getNamespace();
+		logger.info("启用"+namespace+"监听");
 		try {
 			zooKeeper.addWatch(namespace, AddWatchMode.PERSISTENT_RECURSIVE);
 		}catch (Exception e){
 			logger.error("监听"+namespace+"错误！",e);
 			throw e;
 		}
+		logger.info("启用"+namespace+"监听成功！");
 	}
 
+	@Override
+	public void sessionExpired(ZooKeeper zooKeeper) {
+		this.zooKeeper = zooKeeper;
+		try {
+			//重新启用namespace的监听
+			enableNamespaceWatch();
+		}
+		catch (KeeperException | InterruptedException ignored) {
+		}
+	}
 }

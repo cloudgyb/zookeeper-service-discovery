@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.github.cloudgyb.ZookeeperSessionExpiredListener;
 import com.github.cloudgyb.config.ZookeeperServerConfigProperties;
 import com.github.cloudgyb.registry.ServiceInstanceInfo;
 import org.apache.zookeeper.KeeperException;
@@ -25,11 +26,11 @@ import org.slf4j.LoggerFactory;
  * @author cloudgyb
  * 2021/2/25 17:52
  */
-public class DiscoveryService implements ServiceDiscover {
+public class DiscoveryService implements ServiceDiscover, ZookeeperSessionExpiredListener {
 	private final Logger logger = LoggerFactory.getLogger(DiscoveryService.class);
 	private final ZookeeperServerConfigProperties properties;
-	private final ZooKeeper zooKeeper;
-	private final ConcurrentHashMap<String, Map<String, ServiceInstanceInfo>> registry;
+	private ZooKeeper zooKeeper;
+	private ConcurrentHashMap<String, Map<String, ServiceInstanceInfo>> registry;
 
 	public DiscoveryService(ZookeeperServerConfigProperties properties, ZooKeeper zooKeeper) {
 		this.properties = properties;
@@ -94,13 +95,15 @@ public class DiscoveryService implements ServiceDiscover {
 
 	/**
 	 * 服务启动成功后调用该方法，进行首次服务发现
+	 * 使用CopyOnWrite修改注册表
 	 */
 	public void flushRegistry() throws KeeperException, InterruptedException {
+		ConcurrentHashMap<String, Map<String, ServiceInstanceInfo>> newRegistry =  new ConcurrentHashMap<>(4);;
 		List<String> serviceNameList = zooKeeper.getChildren(properties.getNamespace(), true);
 		if (serviceNameList == null)
 			return;
 		for (String serviceName : serviceNameList) {
-			Map<String, ServiceInstanceInfo> serviceList = registry.get(serviceName);
+			Map<String, ServiceInstanceInfo> serviceList = newRegistry.get(serviceName);
 			if (serviceList == null)
 				serviceList = new ConcurrentHashMap<>();
 			List<String> serviceInstanceList = zooKeeper
@@ -116,8 +119,9 @@ public class DiscoveryService implements ServiceDiscover {
 					serviceList.put(serviceInstanceName, serviceInstanceInfo);
 				}
 			}
-			registry.put(serviceName, serviceList);
+			newRegistry.put(serviceName, serviceList);
 		}
+		this.registry = newRegistry;
 	}
 
 	private ServiceInstanceInfo toObject(byte[] data) {
@@ -165,6 +169,17 @@ public class DiscoveryService implements ServiceDiscover {
 					System.out.println(e.getKey()+":"+e.getValue());
 				}
 			}
+		}
+	}
+
+	@Override
+	public void sessionExpired(ZooKeeper zooKeeper) {
+		this.zooKeeper = zooKeeper;
+		try {
+			this.flushRegistry();
+		}
+		catch (KeeperException | InterruptedException e) {
+			e.printStackTrace();
 		}
 	}
 }

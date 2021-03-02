@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 
+import com.github.cloudgyb.ZookeeperSessionExpiredListener;
 import com.github.cloudgyb.config.ApplicationProperties;
 import com.github.cloudgyb.config.ZookeeperServerConfigProperties;
 import com.github.cloudgyb.util.IPUtil;
@@ -19,9 +20,9 @@ import org.apache.zookeeper.data.Stat;
  * @author cloudgyb
  * 2021/2/25 17:24
  */
-public class RegistryService implements ServiceRegister {
+public class RegistryService implements ServiceRegister, ZookeeperSessionExpiredListener {
 	private final Logger logger = Logger.getLogger(RegistryService.class);
-	private final ZooKeeper zooKeeper;
+	private ZooKeeper zooKeeper;
 	private final ZookeeperServerConfigProperties configProperties;
 
 	public RegistryService(ZooKeeper zooKeeper) {
@@ -78,5 +79,13 @@ public class RegistryService implements ServiceRegister {
 		return new ServiceInstanceInfo(config.getApplicationName(), IPUtil
 				.getIpAddress(),
 				config.getServerPort());
+	}
+
+	@Override
+	public void sessionExpired(ZooKeeper zooKeeper) {
+		this.zooKeeper = zooKeeper;
+		logger.info("开始重新注册服务到zookeeper...");
+		this.registry();
+		logger.info("重新注册服务成功！");
 	}
 }
