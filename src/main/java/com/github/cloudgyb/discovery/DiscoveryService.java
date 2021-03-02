@@ -3,8 +3,12 @@ package com.github.cloudgyb.discovery;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.github.cloudgyb.config.ZookeeperServerConfigProperties;
@@ -33,9 +37,13 @@ public class DiscoveryService implements ServiceDiscover {
 		this.registry = new ConcurrentHashMap<>(4);
 	}
 
+	/**
+	 * 该方法只处理zookeeper中监听的namespace对应children的增加和删除事件
+	 * @param e Zookeeper事件
+	 */
 	public void discovery(WatchedEvent e) throws KeeperException, InterruptedException {
 		int type = e.getType().getIntValue();
-		if (type == -1)
+		if (type == -1) //事件type=-1是zookeeper客户端连接到server（或者重新连接）这儿不做服务发现
 			return;
 		logger.info("注册信息发生变化，type=" + type + ",path=" + e.getPath());
 		if (type == 1) {//节点创建（有新的服务注册）
@@ -84,6 +92,9 @@ public class DiscoveryService implements ServiceDiscover {
 		return serviceInstanceInfo;
 	}
 
+	/**
+	 * 服务启动成功后调用该方法，进行首次服务发现
+	 */
 	public void flushRegistry() throws KeeperException, InterruptedException {
 		List<String> serviceNameList = zooKeeper.getChildren(properties.getNamespace(), true);
 		if (serviceNameList == null)
@@ -124,5 +135,36 @@ public class DiscoveryService implements ServiceDiscover {
 
 	public ConcurrentHashMap<String, Map<String, ServiceInstanceInfo>> getRegistry() {
 		return registry;
+	}
+
+	/**
+	 * 给更具服务名查找所有的服务实例信息
+	 * @param serviceName 服务名
+	 * @return Set集合
+	 */
+	public Collection<ServiceInstanceInfo> findService(String serviceName){
+		if(serviceName == null)
+			throw new NullPointerException();
+		Map<String, ServiceInstanceInfo> map = registry.get(serviceName);
+		if(map == null)
+			return Collections.emptySet();
+		HashSet<ServiceInstanceInfo> set = new HashSet<>(map.size());
+		set.addAll(map.values());
+		return set;
+	}
+
+	public void showRegistry() {
+		ConcurrentHashMap<String, Map<String,ServiceInstanceInfo>> registry = getRegistry();
+		Set<Map.Entry<String, Map<String,ServiceInstanceInfo>>> entries = registry.entrySet();
+		for (Map.Entry<String, Map<String,ServiceInstanceInfo>> entry : entries) {
+			System.out.println(entry.getKey());
+			Map<String,ServiceInstanceInfo> entryValue = entry.getValue();
+			if(entryValue != null){
+				Set<Map.Entry<String, ServiceInstanceInfo>> entries1 = entryValue.entrySet();
+				for (Map.Entry<String, ServiceInstanceInfo> e : entries1) {
+					System.out.println(e.getKey()+":"+e.getValue());
+				}
+			}
+		}
 	}
 }

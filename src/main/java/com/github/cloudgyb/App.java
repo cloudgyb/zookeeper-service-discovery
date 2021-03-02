@@ -1,14 +1,12 @@
 package com.github.cloudgyb;
 
-import com.github.cloudgyb.discovery.ZookeeperWatcher;
-
 /**
- * Hello world!
- *
+ * 测试
  */
 public class App {
 	public static void main(String[] args) throws InterruptedException {
-		ZookeeperWatcher zookeeperWatcher = new ZookeeperWatcher();
+		ServiceRegistryAndDiscovery serviceRegistryAndDiscovery = new ServiceRegistryAndDiscovery();
+		System.out.println(serviceRegistryAndDiscovery);
 		Thread.sleep(Long.MAX_VALUE);
 	}
 }
